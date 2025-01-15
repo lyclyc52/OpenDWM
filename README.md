@@ -2,6 +2,10 @@
 
 [[中文简介](README_intro_zh.md)]
 
+https://github.com/user-attachments/assets/e73d22b1-e856-4bee-8bc3-a1e9755e8c25
+
+[Video link](https://youtu.be/j9RRj-xzOA4)
+
 Welcome to the OpenDWM project! This is an open-source initiative, focusing on autonomous driving video generation. Our mission is to provide a high-quality, controllable tool for generating autonomous driving videos using the latest technology. We aim to build a codebase that is both user-friendly and highly reusable, and hope to continuously improve the project through the collective wisdom of the community.
 
 The driving world models generate multi-view images or videos of autonomous driving scenes based on text and road environment layout conditions. Whether it's the environment, weather conditions, vehicle type, or driving path, you can adjust them according to your needs.
@@ -15,10 +19,6 @@ The highlights are as follows:
 3. **Convenient evaluation.** Evaluation follows the popular framework `torchmetrics`, which is easy to configure, develop, and integrate into the pipeline. Public configurations (such as FID, FVD on the nuScenes validation set) are provided to align other research works.
 
 Furthermore, our code modules are designed with high reusability in mind, for easy application in other projects.
-
-https://github.com/user-attachments/assets/e73d22b1-e856-4bee-8bc3-a1e9755e8c25
-
-[Video link](https://youtu.be/j9RRj-xzOA4)
 
 Currently, the project has implemented the following papers:
 
@@ -62,6 +62,7 @@ Our cross-view temporal SD (CTSD) pipeline support loading the pretrained SD 2.1
 | Base model | Text conditioned <br/> driving generation | Text and layout (box, map) <br/> conditioned driving generation |
 | :-: | :-: | :-: |
 | [SD 2.1](https://huggingface.co/stabilityai/stable-diffusion-2-1) | [Config](configs/ctsd/multi_datasets/ctsd_21_tirda_nwao.json), [Download](http://103.237.29.236:10030/ctsd_21_tirda_nwao_30k.pth) | [Config](configs/ctsd/multi_datasets/ctsd_21_tirda_bm_nwa.json), [Download](http://103.237.29.236:10030/ctsd_21_tirda_bm_nwa_30k.pth) |
+| [SD 3.0](https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers) | | [UniMLVG Config](configs/ctsd/unimlvg/unimlvg_stage3_tirda_nwa.json), Released by 2025-2-1 |
 | [SD 3.5](https://huggingface.co/stabilityai/stable-diffusion-3.5-medium) | [Config](configs/ctsd/multi_datasets/ctsd_35_tirda_nwao.json), [Download](http://103.237.29.236:10030/ctsd_35_tirda_nwao_20k.pth) | [Config](configs/ctsd/multi_datasets/ctsd_35_tirda_bm_nwa.json), Released by 2025-2-1 |
 
 ## Examples
