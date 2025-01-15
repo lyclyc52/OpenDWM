@@ -2,7 +2,7 @@
 
 [[English README](README.md)]
 
-https://github.com/user-attachments/assets/e73d22b1-e856-4bee-8bc3-a1e9755e8c25
+https://github.com/user-attachments/assets/649d3b81-3b1f-44f9-9f51-4d1ed7756476
 
 [视频链接](https://youtu.be/j9RRj-xzOA4)
 
