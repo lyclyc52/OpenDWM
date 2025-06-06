@@ -41,7 +41,7 @@ We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets
 <!-- [[1]](#tab-quant_results)。 -->
 
 <table id="tab-quant_results" >
-  <caption style="caption-side:bottom"></caption>
+  <caption style="caption-side:bottom">Quantitative Results</caption>
   <tr>
     <th>Dataset</th>
     <th>IoU</th>
