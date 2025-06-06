@@ -4,11 +4,7 @@
 
 ## Introduction
 
-We propose a pipeline for generating LiDAR data conditioned on layout information using the Mask Generative Image Transformer (MaskGIT) [[1]](#maskgit). Our approach builds upon the models introduced in Copilot4D [[5]](#5) and UltraLiDAR [[4]](#4).
-[Link Text](#anchor-name)
- 
-<a name="anchor-name"></a>
-
+We propose a pipeline for generating LiDAR data conditioned on layout information using the Mask Generative Image Transformer (MaskGIT) [[1]](#1). Our approach builds upon the models introduced in Copilot4D [[5]](#5) and UltraLiDAR [[4]](#4).
 
 ## Method
 
@@ -26,7 +22,7 @@ We build our LiDAR VQ-VAE following the approach of UltraLiDAR [[4]](#4) and Cop
     <img src="https://github.com/user-attachments/assets/cbb2cab3-b819-4f70-baa9-a53cfcd693e9" alt>
 </p>
 
-<!-- <p style="text-align:center">Pipeline of LiDAR MaskGIT</p> -->
+
 
 
 
@@ -134,8 +130,7 @@ We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets
 
 ## References
 
-<a name="anchor-name"></a>
-<a id="maskgit">[1]</a>  Huiwen Chang, Han Zhang, Lu Jiang, Ce Liu, and William T Freeman. Maskgit: Masked generative image transformer. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11315–11325, 2022.
+<a id="1">[q]</a>  Huiwen Chang, Han Zhang, Lu Jiang, Ce Liu, and William T Freeman. Maskgit: Masked generative image transformer. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11315–11325, 2022.
 
 <a id="2">[2]</a>  Rui Chen, Zehuan Wu, Yichen Liu, Yuxin Guo, Jingcheng Ni, Haifeng Xia, and Siyu Xia. Unimlvg: Unified framework for multi-view long video generation with comprehensive control capabilities for autonomous driving. arXiv preprint arXiv:2412.04842, 2024.
 
