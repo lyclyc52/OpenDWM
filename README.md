@@ -1,139 +1,160 @@
-# Open Driving World Models (OpenDWM)
+# Layout-Condition LiDAR Generation with Masked Generative Transformer
 
-[[中文简介](README_intro_zh.md)]
 
-https://github.com/user-attachments/assets/649d3b81-3b1f-44f9-9f51-4d1ed7756476
 
-[Video link](https://youtu.be/j9RRj-xzOA4)
+## Introduction
 
-Welcome to the OpenDWM project! This is an open-source initiative, focusing on autonomous driving video generation. Our mission is to provide a high-quality, controllable tool for generating autonomous driving videos using the latest technology. We aim to build a codebase that is both user-friendly and highly reusable, and hope to continuously improve the project through the collective wisdom of the community.
+We propose a pipeline for generating LiDAR data conditioned on layout information using the Mask Generative Image Transformer (MaskGIT) [[1]](#maskgit). Our approach builds upon the models introduced in Copilot4D [[5]](#5) and UltraLiDAR [[4]](#4).
+[Link Text](#anchor-name)
+ 
+<a name="anchor-name"></a>
 
-The driving world models generate multi-view images or videos of autonomous driving scenes based on text and road environment layout conditions. Whether it's the environment, weather conditions, vehicle type, or driving path, you can adjust them according to your needs.
 
-The highlights are as follows:
+## Method
 
-1. **Significant improvement in the environmental diversity.** Through the use of multiple datasets, the model's generalization ability has been enhanced like never before. Take the example of a generation task controlled by layout conditions, such as a snowy city street or a lakeside highway with distant snow mountains, these scenarios are impossible tasks for generative models trained with a single dataset.
+We first train a Vector Quantized Variational AutoEncoder (VQ-VAE) to tokenize LiDAR data into a 2D latent space. Then,
+the LiDAR MaskGIT model incorporates the layout information such as High-definition maps (HDmaps) and 3D object
+bounding boxes (3Dboxes) and guides the generation of LiDAR in the latent space.
 
-2. **Greatly improved generation quality.** Support for popular model architectures (SD 2.1, 3.5) enables more convenient utilization of the advanced pre-training generation capabilities within the community. Various training techniques, including multitasking and self-supervision, allow the model to utilize the information in autonomous driving video data more effectively.
+### LiDAR VQ-VAE
 
-3. **Convenient evaluation.** Evaluation follows the popular framework `torchmetrics`, which is easy to configure, develop, and integrate into the pipeline. Public configurations (such as FID, FVD on the nuScenes validation set) are provided to align other research works.
+We build our LiDAR VQ-VAE following the approach of UltraLiDAR [[4]](#4) and Copilot4D [[5]](#5). The point cloud $\mathbf{x}$ is fed into a voxelizer $V$ and converted into a Birds-Eye-View (BEV) image. Additionally, we adopt an auxiliary depth rendering branch during decoding. Specifically, given a latent representation $\mathbf z$ of a LiDAR point cloud, the regular decoder transforms the latent back into the original voxel shape, and binary cross entropy loss is used to optimize the network. Furthermore, a depth render network $D$ decodes the latent into a 3D feature voxel, which is used to render the depth of each point. For any point $p$ in $\mathbf x$, we sample a ray from the LiDAR center to $p$ and use the method from [[3]](#3)  to calculate the depth value in this direction. For further details, please refer to [[5]](#5).
 
-Furthermore, our code modules are designed with high reusability in mind, for easy application in other projects.
 
-Currently, the project has implemented the following papers:
 
-> [UniMLVG: Unified Framework for Multi-view Long Video Generation with Comprehensive Control Capabilities for Autonomous Driving](https://sensetime-fvg.github.io/UniMLVG)<br>
-> Rui Chen<sup>1,2</sup>, Zehuan Wu<sup>2</sup>, Yichen Liu<sup>2</sup>, Yuxin Guo<sup>2</sup>, Jingcheng Ni<sup>2</sup>, Haifeng Xia<sup>1</sup>, Siyu Xia<sup>1</sup><br>
-> <sup>1</sup>Southeast University <sup>2</sup>SenseTime Research
+<p id="fig-main">
+    <img src="https://github.com/user-attachments/assets/cbb2cab3-b819-4f70-baa9-a53cfcd693e9" alt>
+</p>
 
-> [MaskGWM: A Generalizable Driving World Model with Video Mask Reconstruction](https://sensetime-fvg.github.io/MaskGWM)<br>
-> Jingcheng Ni, Yuxin Guo, Yichen Liu, Rui Chen, Lewei Lu, Zehuan Wu<br>
-> SenseTime Research
+<!-- <p style="text-align:center">Pipeline of LiDAR MaskGIT</p> -->
 
-## Setup
 
-Hardware requirement:
 
-* Training and testing multi-view image generation or short video (<= 6 frames per iteration) generation requires 32GB GPU memory (e.g. V100)
-* Training and testing multi-view long video (6 ~ 40 frames per iteration) generation requires 80GB GPU memory (e.g. A100, H100)
+### LiDAR MaskGIT
 
-Software requirement:
+Our LiDAR MaskGIT is designed to generate sequences of LiDAR point clouds conditioned on layouts. Specifically, given the LiDAR point clouds from the first $k$ frames, our model can predict subsequent LiDAR point clouds at following timestamps guided by layout conditions such as 3D bounding boxes (3D boxes) and high-definition maps (HD maps). Additionally, we extend our model to directly generate LiDAR data without reference frames.
 
-* git (>= 2.25)
-* python (>= 3.9)
+We follow the Copilot4D framework to build our LiDAR MaskGIT, as illustrated in Figure [1](#fig-main). The input to LiDAR MaskGIT is the masked quantized latent, where masked regions are filled with mask tokens, and the model outputs the probability distribution of VQ-VAE codebook IDs at each position. The architecture employs a spatio-temporal transformer that interleaves spatial and temporal attention. We also adopt free space suppression to encourage more diverse generation results. Please refer to~\cite{copilot4d} for additional details. Furthermore, our model can generate LiDAR data based on layout conditions, which we describe below.
 
-Install the [PyTorch](https://pytorch.org/) >= 2.5:
+#### Layout Conditioning
+Since LiDAR point clouds are encoded into 2D BEV space, both 3D boxes and HD maps are also projected into BEV images. Similar to [[2]](#2), each instance is mapped into the color space. These two conditional images are concatenated and processed through a lightweight image adapter, generating multi-level features that are added to the latent representation at the corresponding transformer layers.
 
-```
-python -m pip install torch==2.5.1 torchvision==0.20.1
-```
 
-Clone the repository, then install the dependencies.
-```
-cd DWM
-git submodule update --init --recursive
-python -m pip install requirements.txt -r
-```
+## Experiment
+We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets and report the quantitative results in Table in the following table.
+<!-- [[1]](#tab-quant_results)。 -->
 
-## Models
+<table id="tab-quant_results" >
+  <caption style="caption-side:bottom"></caption>
+  <tr>
+    <th>Dataset</th>
+    <th>IoU</th>
+    <th>CD</th>
+    <th>MMD</th>
+    <th>JSD</th>
+  </tr>
+  <tr>
+    <td>nuScenes</td>
+    <td>0.055</td>
+    <td>4.438</td>
+    <td>-----</td>
+    <td>-----</td>
+  </tr>
+  <tr>
+    <td>KITTI360</td>
+    <td>0.045</td>
+    <td>5.838</td>
+    <td>0.00461</td>
+    <td>0.471</td>
+  </tr>
+  <tr>
+    <td>nuScenes Temporal</td>
+    <td>0.126</td>
+    <td>3.487</td>
+    <td>-----</td>
+    <td>-----</td>
+  </tr>
+  <tr>
+    <td>KITTI360 Temporal</td>
+    <td>0.117</td>
+    <td>3.347</td>
+    <td>0.00411</td>
+    <td>0.313</td>
+  </tr>
+</table>
 
-Our cross-view temporal SD (CTSD) pipeline support loading the pretrained SD 2.1, 3.0, 3.5, or the checkpoints we trained on the autonomous driving datasets.
+## Visualization
 
-| Base model | Text conditioned <br/> driving generation | Text and layout (box, map) <br/> conditioned driving generation |
-| :-: | :-: | :-: |
-| [SD 2.1](https://huggingface.co/stabilityai/stable-diffusion-2-1) | [Config](configs/ctsd/multi_datasets/ctsd_21_tirda_nwao.json), [Download](http://103.237.29.236:10030/ctsd_21_tirda_nwao_30k.pth) | [Config](configs/ctsd/multi_datasets/ctsd_21_tirda_bm_nwa.json), [Download](http://103.237.29.236:10030/ctsd_21_tirda_bm_nwa_30k.pth) |
-| [SD 3.0](https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers) | | [UniMLVG Config](configs/ctsd/unimlvg/unimlvg_stage3_tirda_nwa.json), Released by 2025-2-1 |
-| [SD 3.5](https://huggingface.co/stabilityai/stable-diffusion-3.5-medium) | [Config](configs/ctsd/multi_datasets/ctsd_35_tirda_nwao.json), [Download](http://103.237.29.236:10030/ctsd_35_tirda_nwao_20k.pth) | [Config](configs/ctsd/multi_datasets/ctsd_35_tirda_bm_nwa.json), Released by 2025-2-1 |
+### Single Frame Generation
+#### NuScenes
+<table>
+  <caption style="caption-side:bottom"></caption>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/9e775f65-e35d-4169-91a3-17a5a92b36eb"></td>
+    <td><img src="https://github.com/user-attachments/assets/9da1436e-0dab-4377-90b6-2fde4f9b06cf"></td>
+    <td><img src="https://github.com/user-attachments/assets/b70c6cac-486b-4fc6-b0dd-e92bb74abcf3"></td>
+    <td><img src="https://github.com/user-attachments/assets/75ba14ee-d408-445f-a7ef-adac573e7684"></td>
+  </tr>
+</table>
 
-## Examples
+#### KITTI360
+<table>
+  <caption style="caption-side:bottom"></caption>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/14e87063-7ba1-47b5-aa53-bd9b387fdcdc"></td>
+    <td><img src="https://github.com/user-attachments/assets/02014996-9ff2-4dfc-8ad4-559203087a50"></td>
+    <td><img src="https://github.com/user-attachments/assets/19c1d76c-b25c-4ffd-9837-26ecaf7c942c"></td>
+    <td><img src="https://github.com/user-attachments/assets/3e621d8d-824e-4b1e-a879-777a70018a25"></td>
+  </tr>
+</table>
 
-### T2I, T2V generation with CTSD pipeline
 
-Download base model (for VAE, text encoders, scheduler config) and driving generation model checkpoint, and edit the [path](examples/ctsd_35_6views_image_generation.json#L102) and [prompts](examples/ctsd_35_6views_image_generation.json#L221) in the JSON config, then run this command.
+### Autoregressive Generation
+#### NuScenes
+<table>
+  <caption style="caption-side:bottom"></caption>
+  <tr>
+    <td><center><img src="https://github.com/user-attachments/assets/2d6ae389-c5f5-4da4-837f-d7c580ad1294">Reference Frame</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/fec86625-9be2-4f49-94a7-ff5f8e0648ba">Frame=2</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/89f37a7f-b2a3-4d29-ac54-29e2f80282e0">Frame=4</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/516bcdf0-34e0-4f30-80d6-d9ff44369282">Frame=6</center></td>
+  </tr>
+</table>
 
-```
-PYTHONPATH=src python examples/ctsd_generation_example.py -c examples/ctsd_35_6views_image_generation.json -o output/ctsd_35_6views_image_generation
-```
+#### KITTI360
+<table>
+  <caption style="caption-side:bottom"></caption>
+  <tr>
+    <td><center><img src="https://github.com/user-attachments/assets/9a23b4e2-7687-419d-8486-ebb95abca5dd">Reference Frame</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/760e3c14-eb47-4a6e-b071-47fc9b8d6ba4">Frame=2</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/2c4026c1-55c2-43fc-aaff-1d4be77eb682">Frame=4</center></td>
+    <td><center><img src="https://github.com/user-attachments/assets/8b2712c2-bc51-45f5-9f05-42c5d5f92a82">Frame=6</center></td>
+  </tr>
+</table>
 
-### Layout conditioned T2V generation with CTSD pipeline
+## References
 
-1. Download base model (for VAE, text encoders, scheduler config) and driving generation model checkpoint, and edit the [path](examples/ctsd_21_6views_video_generation_with_layout.json#L119) in the JSON config.
-2. Download layout resource package [nuscenes_scene-0627_package.zip](http://103.237.29.236:10030/nuscenes_scene-0627_package.zip) and unzip to the `{RESOURCE_PATH}`. Then edit the meta [path](examples/ctsd_21_6views_video_generation_with_layout.json#L129) as `{RESOURCE_PATH}/data.json` in the JSON config.
-3. Run this command to generate the video.
+<a name="anchor-name"></a>
+<a id="maskgit">[1]</a>  Huiwen Chang, Han Zhang, Lu Jiang, Ce Liu, and William T Freeman. Maskgit: Masked generative image transformer. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11315–11325, 2022.
 
-```
-PYTHONPATH=src python src/dwm/preview.py -c examples/ctsd_21_6views_video_generation_with_layout.json -o output/ctsd_21_6views_video_generation_with_layout
-```
+<a id="2">[2]</a>  Rui Chen, Zehuan Wu, Yichen Liu, Yuxin Guo, Jingcheng Ni, Haifeng Xia, and Siyu Xia. Unimlvg: Unified framework for multi-view long video generation with comprehensive control capabilities for autonomous driving. arXiv preprint arXiv:2412.04842, 2024.
 
-## Train
+<a id="3">[3]</a>  Cheng Sun, Min Sun, and Hwann-Tzong Chen. Improved direct voxel grid optimization for radiance fields reconstruction. arXiv preprint arXiv:2206.05085, 2022.
 
-Preparation:
+<a id="4">[4]</a>  Yuwen Xiong, Wei-Chiu Ma, Jingkang Wang, and Raquel Urtasun. Ultralidar: Learning compact representations for lidar completion and generation. arXiv preprint arXiv:2311.01448, 2023.
 
-1. Download the base models.
-2. Download and process [datasets](docs/Datasets.md).
-3. Edit the configuration file (mainly the path of the model and dataset under the user environment).
+<a id="5">[5]</a>  Lunjun Zhang, Yuwen Xiong, Ze Yang, Sergio Casas, Rui Hu, and Raquel Urtasun. Copilot4d: Learning unsupervised world models for autonomous driving via discrete diffusion. arXiv preprint arXiv:2311.01017, 2023.
 
-Once the config file is updated with the correct model and data information, launch training by:
+<a id="6">[6]</a> Holger Caesar, Varun Bankiti, Alex H Lang, Sourabh Vora, Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Giancarlo Baldan,
+and Oscar Beijbom. nuscenes: A multimodal dataset for autonomous driving. In Proceedings of the IEEE/CVF conference on computer
+vision and pattern recognition, pages 11621–11631, 2020.
 
-```
-PYTHONPATH=src:externals/waymo-open-dataset/src:externals/TATS/tats/fvd python src/dwm/train.py -c {YOUR_CONFIG} -o output/{YOUR_WORKSPACE}
-```
+<a id="7">[7]</a> Yiyi Liao, Jun Xie, and Andreas Geiger. Kitti-360: A novel dataset and benchmarks for urban scene understanding in 2d and 3d. IEEE
+Transactions on Pattern Analysis and Machine Intelligence, 45(3):3292–3310, 2022.
 
-Or distributed training by:
 
-```
-OMP_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false PYTHONPATH=src:externals/waymo-open-dataset/src:externals/TATS/tats/fvd python -m torch.distributed.run --nnodes $WORLD_SIZE --nproc-per-node 8 --node-rank $RANK --master-addr $MASTER_ADDR --master-port $MASTER_PORT src/dwm/train.py -c {YOUR_CONFIG} -o output/{YOUR_WORKSPACE}
-```
 
-Then you can check the preview under `output/{YOUR_WORKSPACE}/preview`, and get the checkpoint files from `output/{YOUR_WORKSPACE}/checkpoints`.
 
-Some training tasks require multi stages (for the configurations with names of `train_warmup.json` and `train.json`), you should fill the path of the saved checkpoint from the previous stage into the following stage (for [example](configs/ctsd/single_dataset/ctsd_21_tirda_bm_nusc_a.json#L200)), then launch the training of this following stage.
 
-## Evaluation
 
-We have integrated the functions of FID and FVD metric evaluation in the pipeline, which involves filling in the [validation set](configs/ctsd/single_dataset/ctsd_21_crossview_tirda_bm_nusc_a.json#L394) ([source](configs/ctsd/single_dataset/ctsd_21_crossview_tirda_bm_nusc_a.json#L398), [sampling interval](configs/ctsd/single_dataset/ctsd_21_crossview_tirda_bm_nusc_a.json#L408)) and [evaluation parameters](configs/ctsd/single_dataset/ctsd_21_crossview_tirda_bm_nusc_a.json#L192) (for example, the [number of frames](configs/ctsd/single_dataset/ctsd_21_tirda_bm_nusc_a.json#L212) of each video segment to be measured in FVD) in the configuration file.
 
-The specific call method is as follows.
-
-```
-PYTHONPATH=src:externals/waymo-open-dataset/src:externals/TATS/tats/fvd python src/dwm/evaluate.py -c {YOUR_CONFIG} -o output/{YOUR_WORKSPACE}
-```
-
-Or distributed evaluation by `torch.distributed.run`, similar to the distributed training.
-
-## Development
-
-### Folder structure
-
-* `configs` The config files for data and pipeline with different arguments.
-* `examples` The inference code and configurations.
-* `externals` The dependency projects.
-* `src/dwm` The shared components of this project.
-  * `datasets` implements `torch.utils.data.Dataset` for our training pipeline by reading multi-view, LiDAR and temporal data, with optional text, 3D box, HD map, pose, camera parameters as conditions.
-  * `fs` provides flexible access methods following `fsspec` to the data stored in ZIP blobs, or in the S3 compatible storage services.
-  * `metrics` implements `torchmetrics` compatible classes for quantitative evaluation.
-  * `models` implements generation models and their building blocks.
-  * `pipelines` implements the training logic for different models.
-  * `tools` provides dataset and file processing scripts for faster initialization and reading.
-
-Introduction about the [file system](src/dwm/fs/README.md), and [dataset](src/dwm/datasets/README.md).
