@@ -38,10 +38,9 @@ Since LiDAR point clouds are encoded into 2D BEV space, both 3D boxes and HD map
 
 ## Experiment
 We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets and report the quantitative results in Table in the following table.
-<!-- [[1]](#tab-quant_results)。 -->
 
 <table id="tab-quant_results" >
-  <caption style="caption-side:bottom">Quantitative Results</caption>
+  <caption style="caption-side:bottom"></caption>
   <tr>
     <th>Dataset</th>
     <th>IoU</th>
@@ -80,7 +79,14 @@ We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets
 </table>
 
 ## Visualization
-
+In this section, we provide some qualitative results of our method. The visualization code is provided in `src/dwm/utils/lidar_visualizer.py`. You can run the following bash script to generate visualization results.
+```
+python src/dwm/utils/lidar_visualizer.py \
+--data_type nuscenes \
+--lidar_root /path/to/generated/lidar \
+--data_root /path/to/nuscenes/json \
+--output_path /path/to/output/folder \
+```
 ### Single Frame Generation
 #### NuScenes
 <table>
@@ -130,7 +136,7 @@ We conduct our experiments on nuScenes [[6]](#6) and KITTI360 [[7]](#7) datasets
 
 ## References
 
-<a id="1">[q]</a>  Huiwen Chang, Han Zhang, Lu Jiang, Ce Liu, and William T Freeman. Maskgit: Masked generative image transformer. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11315–11325, 2022.
+<a id="1">[1]</a>  Huiwen Chang, Han Zhang, Lu Jiang, Ce Liu, and William T Freeman. Maskgit: Masked generative image transformer. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pages 11315–11325, 2022.
 
 <a id="2">[2]</a>  Rui Chen, Zehuan Wu, Yichen Liu, Yuxin Guo, Jingcheng Ni, Haifeng Xia, and Siyu Xia. Unimlvg: Unified framework for multi-view long video generation with comprehensive control capabilities for autonomous driving. arXiv preprint arXiv:2412.04842, 2024.
 
